@@ -35,6 +35,7 @@ def UserBased_objective(trial):
 
 
 if __name__ == "__main__":
-    df = pd.read_csv("data.csv", index_col=0)
+    df = pd.read_csv(
+        r"C:\Programming\GitHub\book_recomendation_system\model\data.csv", index_col=0)
     UserBased_params = tune(UserBased_objective)
     UserBased = UserBasedRecommendation(**UserBased_params)

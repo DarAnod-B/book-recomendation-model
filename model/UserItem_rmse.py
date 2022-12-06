@@ -63,16 +63,17 @@ def rmse(y_actual, y_predicted):
 def UserBasedRecommendation_RMSE(processing_type,
                                  model,
                                  data,
-                                 *args,
-                                 number_of_verified_users=100):
+                                 number_of_verified_users=100,
+                                 **args):
+
     if processing_type == 'tune':
         y_actual, y_predicted = create_actual_predict_list(model,
                                                            data,
-                                                           *args,
-                                                           number_of_verified_users=number_of_verified_users)
+                                                           number_of_verified_users=number_of_verified_users,
+                                                           **args)
     elif processing_type == 'test':
         y_actual, y_predicted = create_actual_predict(model,
                                                       data,
-                                                      *args)
+                                                      **args)
 
     return rmse(y_actual, y_predicted)
