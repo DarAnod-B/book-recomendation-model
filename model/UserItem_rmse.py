@@ -1,10 +1,22 @@
 from sklearn.metrics import mean_squared_error
-import math
+from math import sqrt
 from tqdm import tqdm
 from sklearn.model_selection import train_test_split
 
 
-# Добавить запись в файл результатов
+def create_actual_predict(model, test, num_user):
+    test_user = test.query("user==@num_user")
+    test_user_train, test_user_test = train_test_split(test_user)
+
+    item_score = model.predict(test_user_train)
+    score = item_score.merge(test_user_test, how='inner', on='id_book')
+
+    y_actual = list(score["grade"])
+    y_predicted = list(score["predictive_grade"])
+
+    return y_actual, y_predicted
+
+
 def create_test_train(df):
     train_user, test_user = train_test_split(df["user"].unique())
 
@@ -18,32 +30,49 @@ def create_test_train(df):
     return train, test
 
 
-def UserBasedRecommendation_RMSE(UserBasedRecommendation,
-                                 df,
-                                 n_neighbors,
-                                 metric,
-                                 number_of_verified_users=100):
+def create_actual_predict_list(model,
+                               df,
+                               n_neighbors,
+                               metric,
+                               number_of_verified_users=100):
 
     train, test = create_test_train(df)
 
-    model = UserBasedRecommendation(n_neighbors=n_neighbors,
-                                    metric=metric)
+    model = model(n_neighbors=n_neighbors,
+                  metric=metric)
     model.fit(train)
 
-    y_actual = []
-    y_predicted = []
+    y_actual_list = []
+    y_predicted_list = []
 
     for num_user in tqdm(test["user"].unique()[:number_of_verified_users]):
-        test_user = test.query("user==@num_user")
-        test_user_train, test_user_test = train_test_split(test_user)
+        y_actual, y_predicted = create_actual_predict(model, test, num_user)
 
-        item_score = model.predict(test_user_train)
-        score = item_score.merge(test_user_test, how='inner', on='id_book')
+        y_actual_list += y_actual
+        y_predicted_list += y_predicted
 
-        y_actual += list(score["predictive_grade"])
-        y_predicted += list(score["grade"])
+    return y_actual_list, y_predicted_list
 
+
+def rmse(y_actual, y_predicted):
     mse = mean_squared_error(y_actual, y_predicted)
-    rmse = math.sqrt(mse)
-
+    rmse = sqrt(mse)
     return rmse
+
+
+def UserBasedRecommendation_RMSE(processing_type,
+                                 model,
+                                 data,
+                                 *args,
+                                 number_of_verified_users=100):
+    if processing_type == 'tune':
+        y_actual, y_predicted = create_actual_predict_list(model,
+                                                           data,
+                                                           *args,
+                                                           number_of_verified_users=number_of_verified_users)
+    elif processing_type == 'test':
+        y_actual, y_predicted = create_actual_predict(model,
+                                                      data,
+                                                      *args)
+
+    return rmse(y_actual, y_predicted)
