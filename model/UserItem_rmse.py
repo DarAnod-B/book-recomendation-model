@@ -53,6 +53,8 @@ def create_actual_predict_list(model,
 
 
 def rmse(y_actual, y_predicted):
+    assert len(y_actual)!=0 and len(y_predicted)!=0, "y_actual and y_predicted must have length greater than 0."
+
     mse = mean_squared_error(y_actual, y_predicted)
     rmse = sqrt(mse)
     return rmse
