@@ -19,14 +19,12 @@ def create_actual_predict(model, test, num_user):
 
 def create_test_train(df):
     train_user, test_user = train_test_split(df["user"].unique())
+    # Переменная для добавления пользователя с первым экземпляра каждой книги в тренировочный датасет
+    # иначе тренировочный и тестовый датасеты будут иметь разную размерность.
+    user_first_copy_book = set(df.groupby(by="id_book").first()["user"])
 
-    train = df.query("user in @train_user")
-    test = df.query("user in @test_user")
-
-    books_not_in_train = list(set(test["id_book"]) - set(train["id_book"]))
-    test.query("id_book not in @books_not_in_train", inplace=True)
-
-    print(books_not_in_train)
+    train = df.query("user in @train_user or user in @user_first_copy_book")
+    test = df.query("user in @test_user and user not in @user_first_copy_book")
     return train, test
 
 
