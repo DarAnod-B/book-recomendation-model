@@ -1,6 +1,6 @@
 import pandas as pd
 import optuna
-from UserItem import UserBasedRecommendation
+from UserItem_model import UserBasedRecommendation
 from UserItem_rmse import UserBasedRecommendation_RMSE
 
 

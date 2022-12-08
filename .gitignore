@@ -1,3 +1,5 @@
 
 model/data.csv
 *.pyc
+data/data.csv
+data/data.zip

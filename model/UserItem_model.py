@@ -100,8 +100,4 @@ class UserBasedRecommendation:
 
         return predicted_grade_target_user
 
-# model = UserBasedRecommendation()
-# model.fit(train)
 
-# test_user = test.query("user==1")
-# model.predict(test_user)
