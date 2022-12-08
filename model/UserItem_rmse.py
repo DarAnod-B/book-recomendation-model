@@ -4,8 +4,7 @@ from tqdm import tqdm
 from sklearn.model_selection import train_test_split
 
 
-def create_actual_predict(model, test, num_user):
-    test_user = test.query("user==@num_user")
+def create_actual_predict(model, test_user):
     test_user_train, test_user_test = train_test_split(test_user)
 
     item_score = model.predict(test_user_train)
@@ -19,7 +18,7 @@ def create_actual_predict(model, test, num_user):
 
 def create_test_train(df):
     train_user, test_user = train_test_split(df["user"].unique())
-    # Переменная для добавления пользователя с первым экземпляра каждой книги в тренировочный датасет
+    # Переменная для добавления пользователя с первым экземпляраом каждой книги в тренировочный датасет
     # иначе тренировочный и тестовый датасеты будут иметь разную размерность.
     user_first_copy_book = set(df.groupby(by="id_book").first()["user"])
 
@@ -44,7 +43,8 @@ def create_actual_predict_list(model,
     y_predicted_list = []
 
     for num_user in tqdm(test["user"].unique()[:number_of_verified_users]):
-        y_actual, y_predicted = create_actual_predict(model, test, num_user)
+        test_user = test.query("user==@num_user")
+        y_actual, y_predicted = create_actual_predict(model, test_user)
 
         y_actual_list += y_actual
         y_predicted_list += y_predicted
@@ -53,27 +53,23 @@ def create_actual_predict_list(model,
 
 
 def rmse(y_actual, y_predicted):
-    assert len(y_actual)!=0 and len(y_predicted)!=0, "y_actual and y_predicted must have length greater than 0."
+    assert len(y_actual) != 0 and len(
+        y_predicted) != 0, "Of the predicted books, there is not one that is also available in the test (worth increasing number_of_verified_users)."
 
     mse = mean_squared_error(y_actual, y_predicted)
     rmse = sqrt(mse)
+
     return rmse
 
 
-def UserBasedRecommendation_RMSE(processing_type,
-                                 model,
+def UserBasedRecommendation_RMSE(model,
                                  data,
                                  number_of_verified_users=100,
                                  **args):
 
-    if processing_type == 'tune':
-        y_actual, y_predicted = create_actual_predict_list(model,
-                                                           data,
-                                                           number_of_verified_users=number_of_verified_users,
-                                                           **args)
-    elif processing_type == 'test':
-        y_actual, y_predicted = create_actual_predict(model,
-                                                      data,
-                                                      **args)
+    y_actual, y_predicted = create_actual_predict_list(model,
+                                                       data,
+                                                       number_of_verified_users=number_of_verified_users,
+                                                       **args)
 
     return rmse(y_actual, y_predicted)

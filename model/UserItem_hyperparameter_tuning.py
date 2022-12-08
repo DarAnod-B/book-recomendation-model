@@ -26,11 +26,10 @@ def UserBased_objective(trial):
         "metric": trial.suggest_categorical("metric", ["correlation", "cosine", "euclidean", "cityblock"]),
     }
 
-    scores = UserBasedRecommendation_RMSE('tune',
-                                          UserBasedRecommendation,
+    scores = UserBasedRecommendation_RMSE(UserBasedRecommendation,
                                           df,
                                           **param_grid,
-                                          number_of_verified_users=50)
+                                          number_of_verified_users=1)
     return scores
 
 
