@@ -29,12 +29,12 @@ def UserBased_objective(trial):
     scores = UserBasedRecommendation_RMSE(UserBasedRecommendation,
                                           df,
                                           **param_grid,
-                                          number_of_verified_users=1)
+                                          number_of_verified_users=50)
     return scores
 
 
 if __name__ == "__main__":
     df = pd.read_csv(
-        r"C:\Programming\GitHub\book_recomendation_system\model\data.csv", index_col=0)
+        r"C:\Programming\GitHub\book_recomendation_system\data\data.csv", index_col=0)
     UserBased_params = tune(UserBased_objective)
     UserBased = UserBasedRecommendation(**UserBased_params)

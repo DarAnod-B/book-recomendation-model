@@ -3,3 +3,8 @@ model/data.csv
 *.pyc
 data/data.csv
 data/data.zip
+*.pyc
+*.csv
+*.pyc
+*.pyc
+model/__pycache__/UserItem_rmse.cpython-310.pyc
