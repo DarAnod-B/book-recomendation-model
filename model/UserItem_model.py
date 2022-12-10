@@ -39,13 +39,13 @@ class UserBasedRecommendation:
 
     def _prepare_y(self, y):
         # Converts the incoming dataset into a pivot table suitable for working with KNN model.
-        y_pt_grade_with_user_books = y.pivot_table(index='user',
-                                                   columns='id_book',
-                                                   values='grade')
+        y_pt_grade = y.pivot_table(index='user',
+                                   columns='id_book',
+                                   values='grade')
 
         # Adding books that are not in the user's ratings.
         id_books = pd.DataFrame(columns=(self.X_pt_grade.columns))
-        y_pt_grade = y_pt_grade_with_user_books.merge(
+        y_pt_grade = y_pt_grade.merge(
             id_books, how='left').fillna(0).astype('int64')
 
         y_pt_grade = y_pt_grade[sorted(y_pt_grade.columns)]
@@ -99,6 +99,3 @@ class UserBasedRecommendation:
             (similar_users_info['grade_mean'] - similar_users_info['grade'])*similar_users_info['weight']).sum() / sum_weight
 
         return predicted_grade_target_user
-
-
-

@@ -1,22 +1,25 @@
+from enum import Enum
 import requests
 from selectolax.lexbor import LexborHTMLParser
+import argparse
 
-url_1 = r"https://fantlab.ru/rating/work/best?all=1&type=1&threshold=50"
-url_2 = r"https://fantlab.ru/rating/work/popular?all=1&type=1&threshold=50"
-url_3 = r"https://fantlab.ru/rating/work/titled?all=1&type=1"
-
-
-def get_html(url2):
-    with requests.Session() as session:
-        payload = {'login': 'dari', 'password': 'mzMj5tr6nWKtEfd'}
-        url = r"https://fantlab.ru/login"
-
-        session.post(url, data=payload)
-        result = session.get(url2)
-        return result.text
+class Link(Enum):
+    url_best_book = r"https://fantlab.ru/rating/work/best?all=1&type=1&threshold=50"
+    url_popular_book = r"https://fantlab.ru/rating/work/popular?all=1&type=1&threshold=50"
+    url_titled_book = r"https://fantlab.ru/rating/work/titled?all=1&type=1"
 
 
-def text_from_html(html):
+def main() -> None:
+    with open(r'top_link.txt', 'w', encoding="utf-8") as f:
+        f.write(
+            str(
+                set(
+                    text_from_html(get_html(Link.url_best_book)) +
+                    text_from_html(get_html(Link.url_popular_book)) +
+                    text_from_html(get_html(Link.url_titled_book)))))
+
+
+def text_from_html(html: str) -> list:
     tree = LexborHTMLParser(html)
     tree_url = tree.css(
         "body > div.layout > div > div > div.main-container > main > table:nth-child(6) > tbody"
@@ -30,10 +33,24 @@ def text_from_html(html):
         return check
 
 
-with open(r'top_link.txt', 'w', encoding="utf-8") as f:
-    f.write(
-        str(
-            set(
-                text_from_html(get_html(url_1)) +
-                text_from_html(get_html(url_2)) +
-                text_from_html(get_html(url_3)))))
+def get_html(url: str) -> str:
+    with requests.Session() as session:
+        args = parse_args()
+        
+        #  python .\top_book.py --login $(cat .\secrets_data\login) --password $(cat .\secrets_data\password)  
+        payload = {'login': args.login, 'password': args.password}
+        login_url = r"https://fantlab.ru/login"
+
+        session.post(login_url, data=payload)
+        result = session.get(url)
+        html =  result.text
+        return html
+
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-l', '--login', type=str, required=True)
+    parser.add_argument('-p', '--password', type=str, required=True)
+    return parser.parse_args()
+
+if __name__ == "__main__":
+    main()

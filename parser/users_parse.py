@@ -9,12 +9,11 @@ TOP_LINK_PATH = Path("top_link.txt")
 USER_CSV_PATH = Path("user.csv")
 CSV_HEADER = "book; user; grade; rating_grade; publication_date; comment \n"
 
-# Активация UserAgent
 useragent = UserAgent()
 
 
 def main():
-    # Проверка файл на наличие в директории + Добавляет заголовок нашего csv файла, если файл отсутствует.
+    # Проверка файла на наличие в директории + Добавляет заголовок нашего csv файла, если файл отсутствует.
     if not USER_CSV_PATH.exists():
         create_file_with_header(USER_CSV_PATH)
 
@@ -22,7 +21,7 @@ def main():
         sites = read_link_from_file(TOP_LINK_PATH)
 
         for url in tqdm(sites):
-            html, status_code = get_html(url)
+            html, _ = get_html(url)
             # Парсинг списка с отзывами
             line = ''.join(score_user(score_link(html, url)))
             # Проверяем пустая ли строка
@@ -30,8 +29,14 @@ def main():
                 file.write(line)
 
 
+# Создать заголовок для csv
+def create_file_with_header(path: Path) -> None:
+    with open(path, "w") as fd:
+        fd.write(CSV_HEADER)
+
+
 # Чтение ссылок на сайты из top_link.txt
-def read_link_from_file(path: Path):
+def read_link_from_file(path: Path) -> list:
     with open(path, 'r', encoding="utf-8") as f:
         text = f.read()
     book_id = [int(element.strip("'{}")) for element in text.split(", ")]
@@ -39,7 +44,7 @@ def read_link_from_file(path: Path):
 
 
 # Получение html страницы и статуса ответа на запрос.
-def get_html(url):
+def get_html(url: str) -> tuple[str, int]:
     headers = {"Accept": "*/*", "User-Agent": useragent.random}
     # Устанавливаем постоянное соединение
     session = requests.Session()
@@ -49,11 +54,11 @@ def get_html(url):
     session.mount('http://', adapter)
     resp = requests.get(url, headers=headers)
     html = resp.text
-    return html, resp.status_code
+    return [html, resp.status_code]
 
 
 # Получение ссылок на страницы с отзывами
-def score_link(html, url):
+def score_link(html: str, url: str) -> list:
     tree = LexborHTMLParser(html)
     tree_users_list = tree.css_first(r'span.page-links')
 
@@ -72,7 +77,7 @@ def score_link(html, url):
 
 
 # Получение отзывов пользователей
-def score_user(links):
+def score_user(links: list) -> list:
     score_list = []
 
     # Пройтись по ссылкам на страницы с отзывами
@@ -108,12 +113,6 @@ def score_user(links):
                 )
 
     return score_list
-
-
-# Создать заголовок для csv
-def create_file_with_header(path: Path) -> None:
-    with open(path, "w") as fd:
-        fd.write(CSV_HEADER)
 
 
 if __name__ == '__main__':
