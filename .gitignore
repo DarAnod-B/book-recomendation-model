@@ -11,3 +11,4 @@ model/__pycache__/UserItem_rmse.cpython-310.pyc
 *.pyc
 parser/secrets_data/login
 parser/secrets_data/password
+model/__pycache__/UserItem_rmse.cpython-310.pyc
