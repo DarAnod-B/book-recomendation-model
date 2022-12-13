@@ -4,65 +4,49 @@ from fake_useragent import UserAgent
 from selectolax.lexbor import LexborHTMLParser
 from time import sleep
 from tqdm import tqdm
-from enum import Enum
 
+TOP_LINK_PATH = Path("top_link.txt")
+USER_CSV_PATH = Path("user.csv")
 CSV_HEADER = "book; user; grade; rating_grade; publication_date; comment \n"
-STATUS_OK = 200
-
-
-class PathToFile(Enum):
-    TOP_LINK = Path("top_link.txt")
-    USER_CSV = Path("user.csv")
-
-
-class Delay(Enum):
-    RATE_LIMIT_DELAY = 1
-    MINIMUM_DELAY_BETWEEN_REQUESTS = 0.5
-
 
 useragent = UserAgent()
 
 
-def main() -> None:
-    # Checking if the file exists in the directory + adding the header of our csv file if the file is missing.
-    if not PathToFile.USER_CSV.value.exists():
-        create_file_with_header(PathToFile.USER_CSV.value)
+def main():
+    # Проверка файла на наличие в директории + Добавляет заголовок нашего csv файла, если файл отсутствует.
+    if not USER_CSV_PATH.exists():
+        create_file_with_header(USER_CSV_PATH)
 
-    with open(PathToFile.USER_CSV.value, "a", encoding='utf-8') as file:
-        sites = read_link_from_file(PathToFile.TOP_LINK.value)
+    with open(USER_CSV_PATH, "a", encoding='utf-8') as file:
+        sites = read_link_from_file(TOP_LINK_PATH)
 
         for url in tqdm(sites):
             html, _ = get_html(url)
-
-            # Parsing a list with reviews
+            # Парсинг списка с отзывами
             line = ''.join(score_user(score_link(html, url)))
-
-            # Check if the string is empty
+            # Проверяем пустая ли строка
             if line:
                 file.write(line)
 
 
-# Create header for csv
-def create_file_with_header(path: PathToFile) -> None:
-    with open(path, "w") as df:
-        df.write(CSV_HEADER)
-
-# Read links to sites from top_link.txt
+# Создать заголовок для csv
+def create_file_with_header(path: Path) -> None:
+    with open(path, "w") as fd:
+        fd.write(CSV_HEADER)
 
 
-def read_link_from_file(path: PathToFile) -> list:
-    with open(path, 'r', encoding="utf-8") as file:
-        text = file.read()
-    print(text)
+# Чтение ссылок на сайты из top_link.txt
+def read_link_from_file(path: Path) -> list:
+    with open(path, 'r', encoding="utf-8") as f:
+        text = f.read()
     book_id = [int(element.strip("'{}")) for element in text.split(", ")]
     return [f"https://fantlab.ru/work{i}" for i in sorted(book_id)]
 
 
-# Get the html page and request response status.
+# Получение html страницы и статуса ответа на запрос.
 def get_html(url: str) -> tuple[str, int]:
     headers = {"Accept": "*/*", "User-Agent": useragent.random}
-
-    # Establish a permanent connection
+    # Устанавливаем постоянное соединение
     session = requests.Session()
     session.headers = headers
     adapter = requests.adapters.HTTPAdapter(pool_connections=100,
@@ -73,16 +57,17 @@ def get_html(url: str) -> tuple[str, int]:
     return [html, resp.status_code]
 
 
-# Get links to review pages
+# Получение ссылок на страницы с отзывами
 def score_link(html: str, url: str) -> list:
     tree = LexborHTMLParser(html)
-    tree_users = tree.css_first(r'span.page-links')
+    tree_users_list = tree.css_first(r'span.page-links')
 
     link_list = []
-    if tree_users is not None:
-        tree_users_list = tree_users.css(r'a')
-        for user in tree_users_list:
-            # Link to comment page
+    # Пользователи без данного элемента не имеют отзывов
+    if tree_users_list is not None:
+        tree_users = tree_users_list.css(r'a')
+        for user in tree_users:
+            # Ссылка на страницу с комментариями
             link = url + user.attributes['href']
             link_list.append(link)
         return link_list
@@ -91,25 +76,27 @@ def score_link(html: str, url: str) -> list:
         return link_list
 
 
-# Get user feedback
+# Получение отзывов пользователей
 def score_user(links: list) -> list:
     score_list = []
 
-    # Follow links to review pages
+    # Пройтись по ссылкам на страницы с отзывами
     for url in links:
-        sleep(Delay.MINIMUM_DELAY_BETWEEN_REQUESTS.value)
+        sleep(0.5)
         html, status_code = get_html(url)
         tree = LexborHTMLParser(html)
 
-        if status_code != STATUS_OK:
+        # Проверка ответа сервера
+        if status_code != 200:
             print(f'ERROE_{status_code}:{url}')
-            sleep(Delay.RATE_LIMIT_DELAY.value)
+            sleep(1)
             return
 
         score = tree.css("div.responses-list > div.response-item")
         if score is not None:
+            # Пройтись по отзывам
             for user in score:
-                # book; user; book_rating; rating_review; publication_date; review
+                # книга; пользователь; оценка_книги; рейтинг_отзыва; дата_публикации; отзыв
                 book_link = url.split('?')[0]
                 user_id = user.css_first(
                     r'p.response-autor-info>b>a').attributes['href']
